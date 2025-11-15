@@ -1,0 +1,40 @@
+@startuml
+!include <C4/C4_Container>
+
+title Контейнерная диаграмма - Микросервисная архитектура
+
+Person(user, "Пользователь", "Владелец дома")
+
+System_Boundary(DeviceSystem, "Система управления устройствами") {
+    Container(api_gateway, "API Gateway", "Spring Cloud Gateway", "Единая точка входа")
+    
+    Container(user_service, "User Service", "Spring Boot", "Управление пользователями", $tags="microservice")
+    Container(house_service, "House Service", "Spring Boot", "Управление домами", $tags="microservice")
+    Container(device_service, "Device Service", "Spring Boot", "CRUD операции с устройствами", $tags="microservice")
+    Container(telemetry_service, "Telemetry Service", "Spring Boot", "Опрос устройств и сбор данных", $tags="microservice")
+    
+    ContainerDb(user_db, "User DB", "PostgreSQL", "Данные пользователей")
+    ContainerDb(house_db, "House DB", "PostgreSQL", "Данные домов")
+    ContainerDb(device_db, "Device DB", "PostgreSQL", "Данные устройств и типов")
+    ContainerDb(telemetry_db, "Telemetry DB", "TimescaleDB", "Текущие значения")
+}
+
+System_Ext(home_devices, "Устройства дома", "Датчики, термостаты")
+
+' Connections
+Rel(user, api_gateway, "Управляет системой", "HTTPS/REST")
+
+Rel(api_gateway, user_service, "Аутентификация", "HTTP")
+Rel(api_gateway, house_service, "Управление домами", "HTTP")
+Rel(api_gateway, device_service, "Управление устройствами", "HTTP")
+Rel(api_gateway, telemetry_service, "Запросы телеметрии", "HTTP")
+
+Rel(user_service, user_db, "Данные пользователей", "JDBC")
+Rel(house_service, house_db, "Данные домов", "JDBC")
+Rel(device_service, device_db, "Данные устройств и типов", "JDBC")
+Rel(telemetry_service, telemetry_db, "Текущие значения", "JDBC")
+
+Rel(telemetry_service, home_devices, "Запрос данных", "HTTP")
+Rel(device_service, home_devices, "Управление устройствами", "HTTP")
+
+@enduml

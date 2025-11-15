@@ -1,0 +1,388 @@
+openapi: 3.0.3
+info:
+  title: Device Service API
+  description: Микросервис для управления устройствами SmartHome системы
+  version: 1.0.0
+  contact:
+    name: Device Management Team
+    email: devices@smarthome.com
+
+servers:
+  - url: http://localhost:8001
+    description: Device Service API
+
+paths:
+  /devices:
+    get:
+      summary: Получить все устройства
+      description: Возвращает список всех устройств с поддержкой пагинации и фильтрации
+      operationId: getDevices
+      tags:
+        - Devices
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 1000
+          description: Лимит записей
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Смещение для пагинации
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [temperature, humidity, pressure, light, switch, motion]
+          description: Фильтр по типу устройства
+        - name: location
+          in: query
+          schema:
+            type: string
+          description: Фильтр по местоположению
+      responses:
+        '200':
+          description: Успешное получение списка устройств
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevicesListResponse'
+        '400':
+          description: Неверные параметры запроса
+        '500':
+          description: Внутренняя ошибка сервера
+    
+    post:
+      summary: Создать новое устройство
+      description: Создает новое устройство в системе
+      operationId: createDevice
+      tags:
+        - Devices
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDeviceRequest'
+      responses:
+        '201':
+          description: Устройство успешно создано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceResponse'
+        '400':
+          description: Неверные данные запроса
+        '409':
+          description: Устройство с таким именем уже существует
+
+  /devices/{id}:
+    get:
+      summary: Получить устройство по ID
+      description: Возвращает информацию об устройстве по его идентификатору
+      operationId: getDevice
+      tags:
+        - Devices
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID устройства
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Успешное получение устройства
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceResponse'
+        '404':
+          description: Устройство не найдено
+    
+    put:
+      summary: Обновить устройство
+      description: Полностью обновляет информацию об устройстве
+      operationId: updateDevice
+      tags:
+        - Devices
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID устройства
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDeviceRequest'
+      responses:
+        '200':
+          description: Устройство успешно обновлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceResponse'
+        '404':
+          description: Устройство не найдено
+    
+    delete:
+      summary: Удалить устройство
+      description: Удаляет устройство из системы
+      operationId: deleteDevice
+      tags:
+        - Devices
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID устройства
+      responses:
+        '204':
+          description: Устройство успешно удалено
+        '404':
+          description: Устройство не найдено
+
+  /health:
+    get:
+      summary: Health check
+      description: Проверка работоспособности сервиса
+      operationId: healthCheck
+      tags:
+        - System
+      responses:
+        '200':
+          description: Сервис работает нормально
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /:
+    get:
+      summary: Информация о сервисе
+      description: Возвращает информацию о сервисе и доступные эндпоинты
+      operationId: getServiceInfo
+      tags:
+        - System
+      responses:
+        '200':
+          description: Информация о сервисе
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceInfoResponse'
+
+components:
+  schemas:
+    Device:
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        name:
+          type: string
+          example: "Temperature Sensor 1"
+        type:
+          type: string
+          enum: [temperature, humidity, pressure, light, switch, motion]
+          example: "temperature"
+        description:
+          type: string
+          example: "Office temperature sensor"
+        location:
+          type: string
+          example: "Room 101"
+        metadata:
+          type: object
+          properties:
+            unit:
+              type: string
+              example: "°C"
+            min_value:
+              type: number
+              example: -10
+            max_value:
+              type: number
+              example: 50
+            protocol:
+              type: string
+              example: "MQTT"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateDeviceRequest:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+          example: "Humidity Sensor 1"
+          minLength: 1
+          maxLength: 255
+        type:
+          type: string
+          enum: [temperature, humidity, pressure, light, switch, motion]
+          example: "humidity"
+        description:
+          type: string
+          example: "Office humidity monitoring"
+        location:
+          type: string
+          example: "Room 101"
+        metadata:
+          type: object
+          properties:
+            unit:
+              type: string
+              example: "%"
+            min_value:
+              type: number
+              example: 0
+            max_value:
+              type: number
+              example: 100
+            protocol:
+              type: string
+              example: "HTTP"
+
+    UpdateDeviceRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Updated Sensor Name"
+        type:
+          type: string
+          enum: [temperature, humidity, pressure, light, switch, motion]
+        description:
+          type: string
+          example: "Updated description"
+        location:
+          type: string
+          example: "Room 102"
+        metadata:
+          type: object
+          properties:
+            unit:
+              type: string
+            min_value:
+              type: number
+            max_value:
+              type: number
+            protocol:
+              type: string
+
+    DeviceResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "success"
+        data:
+          $ref: '#/components/schemas/Device'
+
+    DevicesListResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "success"
+        data:
+          type: object
+          properties:
+            devices:
+              type: array
+              items:
+                $ref: '#/components/schemas/Device'
+            total:
+              type: integer
+              example: 1
+            limit:
+              type: integer
+              example: 50
+            offset:
+              type: integer
+              example: 0
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "ok"
+        service:
+          type: string
+          example: "device-service"
+        timestamp:
+          type: string
+          format: date-time
+        database:
+          type: string
+          example: "connected"
+        redis:
+          type: string
+          example: "connected"
+
+    ServiceInfoResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "ok"
+        service:
+          type: string
+          example: "device-service"
+        version:
+          type: string
+          example: "1.0.0"
+        timestamp:
+          type: string
+          format: date-time
+        endpoints:
+          type: object
+          additionalProperties:
+            type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "error"
+        message:
+          type: string
+          example: "Device not found"
+        code:
+          type: integer
+          example: 404
+        details:
+          type: object

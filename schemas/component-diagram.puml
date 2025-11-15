@@ -1,0 +1,29 @@
+@startuml
+!include <C4/C4_Component>
+
+title Component Diagram - Device Service
+
+Container(device_service, "Device Service", "Spring Boot", "Управление устройствами")
+
+Component(device_controller, "Device Controller", "Spring REST Controller", "API для устройств\n• GET/POST/PUT/DELETE /devices\n• GET /devices/{id}")
+
+Component(device_service_impl, "Device Service", "Spring Service", "Бизнес-логика устройств\n• Валидация устройств\n• Управление жизненным циклом")
+
+Component(device_repository, "Device Repository", "Spring Data JPA", "Доступ к таблице devices")
+Component(device_type_repository, "DeviceType Repository", "Spring Data JPA", "Доступ к таблице device_types")
+
+ContainerDb(device_db, "Device Database", "PostgreSQL", "Таблицы:\n• devices\n• device_types")
+
+' Connections
+device_controller --> device_service_impl : "использует"
+device_service_impl --> device_repository : "сохраняет/читает устройства"
+device_service_impl --> device_type_repository : "проверяет типы устройств"
+device_repository --> device_db : "JDBC/SQL"
+device_type_repository --> device_db : "JDBC/SQL"
+
+note right of device_service_impl
+  Бизнес-логика:
+  - Создание устройства с проверкой типа
+  - Валидация конфигурации по capabilities типа
+  - Обновление статусов и значений
+end note

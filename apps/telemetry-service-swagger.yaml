@@ -1,0 +1,326 @@
+openapi: 3.0.3
+info:
+  title: Telemetry Service API
+  description: Микросервис для управления телеметрией устройств SmartHome системы
+  version: 1.0.0
+  contact:
+    name: Telemetry Team
+    email: telemetry@smarthome.com
+
+servers:
+  - url: http://localhost:8002
+    description: Telemetry Service API
+
+paths:
+  /devices/{id}/value:
+    get:
+      summary: Получить значение устройства
+      description: Возвращает текущее значение указанного устройства
+      operationId: getDeviceValue
+      tags:
+        - Telemetry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID устройства
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Успешное получение значения
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceValueResponse'
+        '404':
+          description: Устройство не найдено
+        '500':
+          description: Ошибка получения значения
+    
+    patch:
+      summary: Обновить значение устройства
+      description: Обновляет значение указанного устройства
+      operationId: updateDeviceValue
+      tags:
+        - Telemetry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID устройства
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDeviceValueRequest'
+      responses:
+        '200':
+          description: Значение успешно обновлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Неверные данные запроса
+        '404':
+          description: Устройство не найдено
+
+  /devices/{id}/poll:
+    post:
+      summary: Опрос конкретного устройства
+      description: Запускает опрос указанного устройства для получения актуального значения
+      operationId: pollDevice
+      tags:
+        - Telemetry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID устройства
+      responses:
+        '200':
+          description: Опрос завершен успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PollResponse'
+        '404':
+          description: Устройство не найдено
+        '500':
+          description: Ошибка при опросе устройства
+
+  /devices/poll:
+    post:
+      summary: Опрос всех устройств
+      description: Запускает опрос всех доступных устройств
+      operationId: pollAllDevices
+      tags:
+        - Telemetry
+      responses:
+        '200':
+          description: Опрос всех устройств завершен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PollAllResponse'
+        '500':
+          description: Ошибка при опросе устройств
+
+  /health:
+    get:
+      summary: Health check
+      description: Проверка работоспособности сервиса
+      operationId: healthCheck
+      tags:
+        - System
+      responses:
+        '200':
+          description: Сервис работает нормально
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /:
+    get:
+      summary: Информация о сервисе
+      description: Возвращает информацию о сервисе и доступные эндпоинты
+      operationId: getServiceInfo
+      tags:
+        - System
+      responses:
+        '200':
+          description: Информация о сервисе
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceInfoResponse'
+
+components:
+  schemas:
+    DeviceValue:
+      type: object
+      required:
+        - device_id
+        - value
+        - timestamp
+      properties:
+        device_id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        value:
+          type: number
+          example: 25.5
+        unit:
+          type: string
+          example: "°C"
+        timestamp:
+          type: string
+          format: date-time
+        quality:
+          type: string
+          enum: [good, warning, error]
+          example: "good"
+
+    DeviceValueResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "success"
+        data:
+          $ref: '#/components/schemas/DeviceValue'
+
+    UpdateDeviceValueRequest:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          type: number
+          example: 26.8
+        unit:
+          type: string
+          example: "°C"
+        quality:
+          type: string
+          enum: [good, warning, error]
+
+    PollResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "success"
+        data:
+          type: object
+          properties:
+            device_id:
+              type: string
+              format: uuid
+            polling_status:
+              type: string
+              enum: [completed, failed, timeout]
+              example: "completed"
+            new_value:
+              type: number
+              example: 24.2
+            timestamp:
+              type: string
+              format: date-time
+            message:
+              type: string
+              example: "Polling successful"
+
+    PollAllResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "success"
+        data:
+          type: object
+          properties:
+            polled_devices:
+              type: integer
+              example: 15
+            successful:
+              type: integer
+              example: 14
+            failed:
+              type: integer
+              example: 1
+            failed_devices:
+              type: array
+              items:
+                type: string
+            timestamp:
+              type: string
+              format: date-time
+            duration_ms:
+              type: number
+              example: 1250.5
+
+    SuccessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "success"
+        message:
+          type: string
+          example: "Device value updated"
+        timestamp:
+          type: string
+          format: date-time
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "ok"
+        service:
+          type: string
+          example: "telemetry-service"
+        timestamp:
+          type: string
+          format: date-time
+        database:
+          type: string
+          example: "connected"
+        redis:
+          type: string
+          example: "connected"
+        device_service:
+          type: string
+          example: "connected"
+        rabbitmq:
+          type: string
+          example: "connected"
+
+    ServiceInfoResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "ok"
+        service:
+          type: string
+          example: "telemetry-service"
+        version:
+          type: string
+          example: "1.0.0"
+        timestamp:
+          type: string
+          format: date-time
+        endpoints:
+          type: object
+          additionalProperties:
+            type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "error"
+        message:
+          type: string
+          example: "Device not found"
+        code:
+          type: integer
+          example: 404
+        details:
+          type: object

@@ -1,0 +1,62 @@
+@startuml
+!define ENTITY(name) class name << (E,#FFAAAA) Entity >>
+!define PRIMARY_KEY(x) <b><color:red>*{x}</color></b>
+!define FOREIGN_KEY(x) <color:blue>^{x}</color>
+
+hide methods
+hide stereotypes
+
+ENTITY(users) {
+  PRIMARY_KEY(id): UUID
+  --
+  email: String
+  password_hash: String
+  full_name: String
+  created_at: Timestamp
+  is_active: Boolean
+}
+
+ENTITY(houses) {
+  PRIMARY_KEY(id): UUID
+  FOREIGN_KEY(user_id): UUID
+  --
+  name: String
+  address: String
+  created_at: Timestamp
+}
+
+ENTITY(device_types) {
+  PRIMARY_KEY(id): UUID
+  --
+  name: String
+  category: String
+  manufacturer: String
+  model: String
+  protocol: String
+  polling_interval: Integer
+  capabilities: JSON
+}
+
+ENTITY(devices) {
+  PRIMARY_KEY(id): UUID
+  FOREIGN_KEY(house_id): UUID
+  FOREIGN_KEY(device_type_id): UUID
+  --
+  serial_number: String
+  name: String
+  location: String
+  ip_address: String
+  credentials: JSON
+  configuration: JSON
+  status: String
+  value: Decimal
+  last_seen: Timestamp
+  created_at: Timestamp
+}
+
+' Связи между сущностями
+users ||--o{ houses : "owns"
+houses ||--o{ devices : "contains"
+device_types ||--o{ devices : "classifies"
+
+@enduml
