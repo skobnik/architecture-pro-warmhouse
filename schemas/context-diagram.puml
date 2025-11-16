@@ -1,0 +1,17 @@
+@startuml
+title Контекстная диаграмма - Система Управления Устройствами
+
+!include <C4/C4_Context>
+
+Person(admin, "Пользователь", "Управляет датчиками через веб-интерфейс")
+System(DeviceManagementSystem, "Система Управления Устройствами", "Cистема управления IoT датчиками")
+
+System_Ext(sensors, "Сенсоры", "Внешние датчики температуры и IoT устройства")
+System_Ext(database, "База данных", "Хранилище для конфигурации и метаданных датчиков")
+
+Rel(admin, DeviceManagementSystem, "Выполняет запросы", "HTTP запросы")
+Rel(DeviceManagementSystem, sensors, "Опрашивает датчики для получения данных", "HTTP запросы")
+Rel(DeviceManagementSystem, sensors, "Устанавливает температуру", "HTTP запросы")
+Rel(DeviceManagementSystem, database, "CRUD операции с данными датчиков", "SQL запросы")
+
+@enduml

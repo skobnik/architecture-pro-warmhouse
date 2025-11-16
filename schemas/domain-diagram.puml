@@ -1,0 +1,81 @@
+@startuml
+title Диаграмма кода - SaaS Smart Home Domain Model
+
+package "User Management" {
+    class User <<Entity>> {
+        - userId: String
+        - email: String
+        - subscription: Subscription
+        - tenantId: String
+        + activateSubscription()
+        + addDevice()
+    }
+
+    class Subscription <<Value Object>> {
+        - plan: PlanType
+        - maxDevices: int
+        - features: Set<Feature>
+        - expiresAt: Date
+        + canAddDevice(): boolean
+    }
+
+    class PlanType <<Enumeration>> {
+        BASIC
+        PREMIUM
+        ENTERPRISE
+    }
+}
+
+package "Device Management" {
+    class UserDevice <<Entity>> {
+        - deviceId: String
+        - userId: String
+        - partnerDevice: PartnerDevice
+        - configuration: DeviceConfig
+        - status: DeviceStatus
+        + updateConfig()
+        + sendCommand()
+    }
+
+    class PartnerDevice <<Entity>> {
+        - partnerId: String
+        - model: String
+        - supportedProtocols: List<Protocol>
+        - capabilities: Set<Capability>
+    }
+
+    class DeviceConfig <<Value Object>> {
+        - settings: Map<String, Object>
+        - schedules: List<Schedule>
+        + validate()
+    }
+}
+
+package "Integration" {
+    class ProtocolAdapter <<Service>> {
+        + connect(device)
+        + sendCommand(device, command)
+        + receiveTelemetry(data)
+    }
+
+    class DeviceCapability <<Enumeration>> {
+        TEMPERATURE_CONTROL
+        LIGHT_SWITCH
+        GATE_CONTROL
+        CAMERA_STREAM
+    }
+}
+
+User "1" *-- "1" Subscription
+User "1" *-- "*" UserDevice
+UserDevice *-- PartnerDevice
+UserDevice *-- DeviceConfig
+PartnerDevice --> DeviceCapability
+ProtocolAdapter ..> PartnerDevice
+
+note right of User
+    SaaS мультитенантная архитектура:
+    - Изоляция данных по tenantId
+    - Self-service onboarding
+    - Гибкая система подписок
+end note
