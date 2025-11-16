@@ -9,7 +9,11 @@ $query_params = [];
 if (isset($parsed_url['query'])) {
     parse_str($parsed_url['query'], $query_params);
 }
-if ($path === '/temperature') {
+
+$path_parts = explode('/', trim($path, '/'));
+$base_path = $path_parts[0] ?? '';
+
+if ($base_path === 'temperature') {
 
     $location = $query_params['location'] ?? '';
 
